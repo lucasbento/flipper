@@ -21,6 +21,7 @@ import {Settings, DEFAULT_ANDROID_SDK_PATH} from '../reducers/settings';
 import {flush} from '../utils/persistor';
 import ToggledSection from './settings/ToggledSection';
 import {FilePathConfigField, ConfigText} from './settings/configFields';
+import KeyboardShortcutInput from './settings/KeyboardShortcutInput';
 import isEqual from 'lodash.isequal';
 import restartFlipper from '../utils/restartFlipper';
 import LauncherSettingsPanel from '../fb-stubs/LauncherSettingsPanel';
@@ -153,6 +154,43 @@ class SettingsSheet extends Component<Props, State> {
             });
           }}
         />
+        <ToggledSection
+          label="React Native keyboard shortcuts"
+          toggled={this.state.updatedSettings.enableAndroid}
+          // onChange={v => {
+          //   this.setState({
+          //     updatedSettings: {
+          //       ...this.state.updatedSettings,
+          //       enableAndroid: v,
+          //     },
+          //   });
+          // }}
+        >
+          <KeyboardShortcutInput
+            label="Reload application"
+            value="LOL"
+            // onChange={v => {
+            //   this.setState({
+            //     updatedSettings: {
+            //       ...this.state.updatedSettings,
+            //       androidHome: v,
+            //     },
+            //   });
+            // }}
+          />
+          <KeyboardShortcutInput
+            label="Open developer menu"
+            value="LOL"
+            // onChange={v => {
+            //   this.setState({
+            //     updatedSettings: {
+            //       ...this.state.updatedSettings,
+            //       androidHome: v,
+            //     },
+            //   });
+            // }}
+          />
+        </ToggledSection>
         <br />
         <FlexRow>
           <Spacer />
