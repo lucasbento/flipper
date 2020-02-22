@@ -10,7 +10,13 @@
 const [s, ns] = process.hrtime();
 let launchStartTime = s * 1e3 + ns / 1e6;
 
-const {app, BrowserWindow, ipcMain, Notification} = require('electron');
+const {
+  app,
+  BrowserWindow,
+  ipcMain,
+  Notification,
+  globalShortcut,
+} = require('electron');
 const path = require('path');
 const url = require('url');
 const fs = require('fs');
@@ -193,6 +199,10 @@ app.on('ready', () => {
       installExtension(REDUX_DEVTOOLS.id);
     }
   });
+});
+
+app.on('will-quit', () => {
+  globalShortcut.unregisterAll();
 });
 
 ipcMain.on('componentDidMount', event => {

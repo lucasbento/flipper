@@ -83,12 +83,20 @@ class SettingsSheet extends Component<Props, State> {
   };
 
   render() {
+    const {
+      enableAndroid,
+      androidHome,
+      enableIOS,
+      enablePrefetching,
+      reactNative,
+    } = this.state.updatedSettings;
+
     return (
       <Container>
         <Title>Settings</Title>
         <ToggledSection
           label="Android Developer"
-          toggled={this.state.updatedSettings.enableAndroid}
+          toggled={enableAndroid}
           onChange={v => {
             this.setState({
               updatedSettings: {
@@ -100,7 +108,7 @@ class SettingsSheet extends Component<Props, State> {
           <FilePathConfigField
             label="Android SDK Location"
             resetValue={DEFAULT_ANDROID_SDK_PATH}
-            defaultValue={this.state.updatedSettings.androidHome}
+            defaultValue={androidHome}
             onChange={v => {
               this.setState({
                 updatedSettings: {
@@ -113,9 +121,7 @@ class SettingsSheet extends Component<Props, State> {
         </ToggledSection>
         <ToggledSection
           label="iOS Developer"
-          toggled={
-            this.state.updatedSettings.enableIOS && platform === 'darwin'
-          }
+          toggled={enableIOS && platform === 'darwin'}
           frozen={platform !== 'darwin'}
           onChange={v => {
             this.setState({
@@ -135,7 +141,7 @@ class SettingsSheet extends Component<Props, State> {
           )}
         </ToggledSection>
         <LauncherSettingsPanel
-          isPrefetchingEnabled={this.state.updatedSettings.enablePrefetching}
+          isPrefetchingEnabled={enablePrefetching}
           onEnablePrefetchingChange={v => {
             this.setState({
               updatedSettings: {
@@ -156,39 +162,56 @@ class SettingsSheet extends Component<Props, State> {
         />
         <ToggledSection
           label="React Native keyboard shortcuts"
-          toggled={this.state.updatedSettings.enableAndroid}
-          // onChange={v => {
-          //   this.setState({
-          //     updatedSettings: {
-          //       ...this.state.updatedSettings,
-          //       enableAndroid: v,
-          //     },
-          //   });
-          // }}
-        >
+          toggled={reactNative.shortcuts.enabled}
+          onChange={enabled => {
+            this.setState(prevState => ({
+              updatedSettings: {
+                ...prevState.updatedSettings,
+                reactNative: {
+                  ...prevState.updatedSettings.reactNative,
+                  shortcuts: {
+                    ...prevState.updatedSettings.reactNative.shortcuts,
+                    enabled,
+                  },
+                },
+              },
+            }));
+          }}>
           <KeyboardShortcutInput
             label="Reload application"
-            value="LOL"
-            // onChange={v => {
-            //   this.setState({
-            //     updatedSettings: {
-            //       ...this.state.updatedSettings,
-            //       androidHome: v,
-            //     },
-            //   });
-            // }}
+            value={reactNative.shortcuts.reload}
+            onChange={reload => {
+              this.setState(prevState => ({
+                updatedSettings: {
+                  ...prevState.updatedSettings,
+                  reactNative: {
+                    ...prevState.updatedSettings.reactNative,
+                    shortcuts: {
+                      ...prevState.updatedSettings.reactNative.shortcuts,
+                      reload,
+                    },
+                  },
+                },
+              }));
+            }}
           />
           <KeyboardShortcutInput
             label="Open developer menu"
-            value="LOL"
-            // onChange={v => {
-            //   this.setState({
-            //     updatedSettings: {
-            //       ...this.state.updatedSettings,
-            //       androidHome: v,
-            //     },
-            //   });
-            // }}
+            value={reactNative.shortcuts.openDevMenu}
+            onChange={openDevMenu => {
+              this.setState(prevState => ({
+                updatedSettings: {
+                  ...prevState.updatedSettings,
+                  reactNative: {
+                    ...prevState.updatedSettings.reactNative,
+                    shortcuts: {
+                      ...prevState.updatedSettings.reactNative.shortcuts,
+                      openDevMenu,
+                    },
+                  },
+                },
+              }));
+            }}
           />
         </ToggledSection>
         <br />

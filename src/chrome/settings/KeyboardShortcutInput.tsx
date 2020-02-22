@@ -7,17 +7,8 @@
  * @format
  */
 
-import {
-  FlexColumn,
-  styled,
-  FlexRow,
-  ToggleButton,
-  Input,
-  Text,
-  colors,
-} from 'flipper';
-import React, {useRef, useState} from 'react';
-import keycode from 'keycode';
+import {FlexColumn, styled, FlexRow, Text, Glyph, colors} from 'flipper';
+import React, {useRef, useState, useEffect} from 'react';
 
 const KEYCODES = {
   DELETE: 8,
@@ -27,27 +18,38 @@ const KEYCODES = {
   LEFT_COMMAND: 91, // Left ⌘ / Windows Key / Chromebook Search key
   RIGHT_COMMAND: 93, // Right ⌘ / Windows Menu
 };
+const ACCELERATORS = {
+  COMMAND: 'Command',
+  ALT: 'Alt',
+  CONTROL: 'Control',
+  SHIFT: 'Shift',
+};
 
 const Container = styled(FlexRow)({
+  paddingTop: 5,
   paddingLeft: 10,
   paddingRight: 10,
+  width: 343,
 });
 
 const Label = styled(Text)({
-  paddingTop: 5,
+  alignSelf: 'center',
+  width: 140,
 });
 
-const ShortcutKeysContainer = styled(FlexRow)({
-  backgroundColor: colors.white,
-  border: `1px solid ${colors.light15}`,
-  borderRadius: 4,
-  display: 'flex',
-  justifyContent: 'center',
-  height: 28,
-  marginLeft: 10,
-  flexGrow: 1,
-  padding: 2,
-});
+const ShortcutKeysContainer = styled(FlexRow)<{invalid: boolean}>(
+  {
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderRadius: 4,
+    display: 'flex',
+    height: 28,
+    flexGrow: 1,
+    padding: 2,
+  },
+  props => ({borderColor: props.invalid ? colors.red : colors.light15}),
+);
 
 const ShortcutKeyContainer = styled.div({
   border: `1px solid ${colors.light20}`,
@@ -62,44 +64,72 @@ const ShortcutKeyContainer = styled.div({
 
 const ShortcutKey = styled.span({
   color: colors.dark70,
+  verticalAlign: 'middle',
 });
 
 const HiddenInput = styled.input({
   opacity: 0,
   width: 0,
   height: 0,
+  position: 'absolute',
 });
 
-const GreyedOutOverlay = styled.div({
-  backgroundColor: '#EFEEEF',
-  borderRadius: 4,
-  opacity: 0.6,
-  height: '100%',
-  position: 'absolute',
-  left: 0,
-  right: 0,
+const CenteredGlyph = styled(Glyph)({
+  margin: 'auto',
+  marginLeft: 10,
 });
 
 const KeyboardShortcutInput = (props: {
   label: string;
   value: string;
   onChange?: (value: string) => void;
-  // Whether to disallow interactions with this toggle
-  frozen?: boolean;
 }) => {
-  // TODO: handle from props
-  const [pressedKeys, setPressedKeys] = useState({
-    metaKey: false,
-    altKey: false,
-    ctrlKey: false,
-    shiftKey: false,
-    character: '',
+  const getInitialStateFromProps = () => ({
+    metaKey: props.value && props.value.includes(ACCELERATORS.COMMAND),
+    altKey: props.value && props.value.includes(ACCELERATORS.ALT),
+    ctrlKey: props.value && props.value.includes(ACCELERATORS.CONTROL),
+    shiftKey: props.value && props.value.includes(ACCELERATORS.SHIFT),
+    character:
+      props.value &&
+      props.value.replace(
+        new RegExp(
+          `${ACCELERATORS.COMMAND}|${ACCELERATORS.ALT}|Or|${ACCELERATORS.CONTROL}|${ACCELERATORS.SHIFT}|\\+`,
+          'g',
+        ),
+        '',
+      ),
   });
 
-  const inputRef = useRef(null);
+  const [pressedKeys, setPressedKeys] = useState(getInitialStateFromProps());
+  const [isShortcutValid, setIsShortcutValid] = useState<boolean | undefined>(
+    undefined,
+  );
+
+  useEffect(() => {
+    if (!isShortcutValid) {
+      return;
+    }
+
+    const {metaKey, altKey, ctrlKey, shiftKey, character} = pressedKeys;
+
+    const accelerator = [
+      metaKey && ACCELERATORS.COMMAND,
+      altKey && ACCELERATORS.ALT,
+      ctrlKey && ACCELERATORS.CONTROL,
+      shiftKey && ACCELERATORS.SHIFT,
+      character,
+    ].filter(Boolean);
+
+    if (typeof props.onChange === 'function') {
+      props.onChange(accelerator.join('+'));
+    }
+  }, [isShortcutValid]);
+
+  const inputRef = useRef<HTMLInputElement>(null);
+  let typingTimeout: NodeJS.Timeout;
 
   const handleFocusInput = () => {
-    if (inputRef && inputRef.current) {
+    if (inputRef.current !== null) {
       inputRef.current.focus();
     }
   };
@@ -107,7 +137,7 @@ const KeyboardShortcutInput = (props: {
   const isCharacterSpecial = (keycode: number) =>
     Object.values(KEYCODES).includes(keycode);
 
-  const handleKeyDown = event => {
+  const handleKeyDown = (event: React.KeyboardEvent) => {
     if (event.which === 9) {
       return;
     }
@@ -115,16 +145,32 @@ const KeyboardShortcutInput = (props: {
     event.preventDefault();
 
     const {metaKey, altKey, ctrlKey, shiftKey} = event;
+    const character = isCharacterSpecial(event.which)
+      ? ''
+      : String.fromCharCode(event.which);
 
     setPressedKeys({
       metaKey,
       altKey,
       ctrlKey,
       shiftKey,
-      character: isCharacterSpecial(event.which)
-        ? ''
-        : String.fromCharCode(event.which),
+      character,
     });
+    setIsShortcutValid(undefined);
+  };
+
+  const handleKeyUp = () => {
+    const {metaKey, altKey, ctrlKey, shiftKey, character} = pressedKeys;
+
+    clearTimeout(typingTimeout);
+    typingTimeout = setTimeout(
+      () =>
+        setIsShortcutValid(
+          [metaKey, altKey, ctrlKey, shiftKey].includes(true) &&
+            character !== '',
+        ),
+      500,
+    );
   };
 
   const renderKeys = () => {
@@ -146,20 +192,34 @@ const KeyboardShortcutInput = (props: {
   return (
     <Container>
       <Label>{props.label}</Label>
-      <ShortcutKeysContainer onClick={handleFocusInput}>
+      <ShortcutKeysContainer
+        invalid={isShortcutValid === false}
+        onClick={handleFocusInput}>
         {renderKeys()}
 
         <HiddenInput
           ref={inputRef}
-          // onKeyUp={this.store}
           onKeyDown={handleKeyDown}
-          // onBlur={this.handleBlur}
+          onKeyUp={handleKeyUp}
         />
       </ShortcutKeysContainer>
-      {/* <IndentedSection>
-      {props.children}
-      {props.toggled || props.frozen ? null : <GreyedOutOverlay />}
-    </IndentedSection> */}
+
+      <FlexColumn onClick={() => {}}>
+        <CenteredGlyph name="undo" variant="outline" />
+      </FlexColumn>
+
+      <FlexColumn
+        onClick={() =>
+          setPressedKeys({
+            metaKey: false,
+            altKey: false,
+            ctrlKey: false,
+            shiftKey: false,
+            character: '',
+          })
+        }>
+        <CenteredGlyph name="undo" variant="outline" />
+      </FlexColumn>
     </Container>
   );
 };
