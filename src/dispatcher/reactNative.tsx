@@ -34,6 +34,7 @@ export default (store: Store) => {
   shortcuts.forEach(
     (shortcut: ShortcutEventCommand) =>
       shortcut &&
+      shortcut.shortcut &&
       remote.globalShortcut.register(shortcut.shortcut, () => {
         const devices = store
           .getState()

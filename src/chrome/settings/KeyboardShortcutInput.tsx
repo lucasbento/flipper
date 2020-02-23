@@ -10,6 +10,14 @@
 import {FlexColumn, styled, FlexRow, Text, Glyph, colors} from 'flipper';
 import React, {useRef, useState, useEffect} from 'react';
 
+type PressedKeys = {
+  metaKey: boolean;
+  altKey: boolean;
+  ctrlKey: boolean;
+  shiftKey: boolean;
+  character: string;
+};
+
 const KEYCODES = {
   DELETE: 8,
   ALT: 18,
@@ -18,6 +26,7 @@ const KEYCODES = {
   LEFT_COMMAND: 91, // Left ⌘ / Windows Key / Chromebook Search key
   RIGHT_COMMAND: 93, // Right ⌘ / Windows Menu
 };
+
 const ACCELERATORS = {
   COMMAND: 'Command',
   ALT: 'Alt',
@@ -84,7 +93,7 @@ const KeyboardShortcutInput = (props: {
   value: string;
   onChange?: (value: string) => void;
 }) => {
-  const getInitialStateFromProps = () => ({
+  const getInitialStateFromProps = (): PressedKeys => ({
     metaKey: props.value && props.value.includes(ACCELERATORS.COMMAND),
     altKey: props.value && props.value.includes(ACCELERATORS.ALT),
     ctrlKey: props.value && props.value.includes(ACCELERATORS.CONTROL),
@@ -100,7 +109,12 @@ const KeyboardShortcutInput = (props: {
       ),
   });
 
-  const [pressedKeys, setPressedKeys] = useState(getInitialStateFromProps());
+  const [initialPressedKeys] = useState<PressedKeys>(
+    getInitialStateFromProps(),
+  );
+  const [pressedKeys, setPressedKeys] = useState<PressedKeys>(
+    initialPressedKeys,
+  );
   const [isShortcutValid, setIsShortcutValid] = useState<boolean | undefined>(
     undefined,
   );
@@ -166,11 +180,21 @@ const KeyboardShortcutInput = (props: {
     typingTimeout = setTimeout(
       () =>
         setIsShortcutValid(
-          [metaKey, altKey, ctrlKey, shiftKey].includes(true) &&
-            character !== '',
+          ([metaKey, altKey, ctrlKey, shiftKey].includes(true) &&
+            character !== '') ||
+            [metaKey, altKey, ctrlKey, shiftKey, character].every(
+              value => !value,
+            ),
         ),
       500,
     );
+  };
+
+  const handleUpdatePressedKeys = (keys: PressedKeys) => {
+    setPressedKeys(keys);
+    handleKeyUp();
+    handleFocusInput();
+    setIsShortcutValid(undefined);
   };
 
   const renderKeys = () => {
@@ -204,13 +228,13 @@ const KeyboardShortcutInput = (props: {
         />
       </ShortcutKeysContainer>
 
-      <FlexColumn onClick={() => {}}>
+      <FlexColumn onClick={() => handleUpdatePressedKeys(initialPressedKeys)}>
         <CenteredGlyph name="undo" variant="outline" />
       </FlexColumn>
 
       <FlexColumn
         onClick={() =>
-          setPressedKeys({
+          handleUpdatePressedKeys({
             metaKey: false,
             altKey: false,
             ctrlKey: false,
